@@ -1,0 +1,8 @@
+#QCIR-G14
+exists(x1)
+forall(x2)
+output(g)
+g=OR(g1,g2)
+g1=And(x1,g2)
+g2=oR(x1,-x2)
+g=Or(x)
