@@ -8,7 +8,7 @@
 #define QTYPES_HH_15436
 #include <vector>
 #include <ostream>
-enum QuantifierType {UNIVERSAL, EXISTENTIAL};
+enum QuantifierType {UNIVERSAL, EXISTENTIAL, FREE};
 typedef std::vector<int> VarVec;
 typedef std::pair<QuantifierType,VarVec> Quantification;
 typedef std::vector<Quantification> Prefix;

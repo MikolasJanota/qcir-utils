@@ -14,7 +14,6 @@ typedef int yy_input_t(char* buf, int size);
 
 yy_input_t *yy_input;
 
-
 %}
 
 %option noyywrap nounput
@@ -37,6 +36,7 @@ yy_input_t *yy_input;
 <NONINITIAL>[oO][uU][tT][pP][uU][tT]  { return OUTPUT; }
 <NONINITIAL>[eE][xX][iI][sS][tT][sS]  { return EXISTS; }
 <NONINITIAL>[fF][oO][rR][aA][lL][lL]  { return FORALL; }
+<NONINITIAL>[fF][rR][eE][eE]  { return FREE_TOK; }
 <NONINITIAL>[xX][oO][rR]     { return XOR; }
 <NONINITIAL>[aA][nN][dD]     { return AND; }
 <NONINITIAL>[oO][rR]      { return OR; }

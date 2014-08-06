@@ -23,7 +23,6 @@ int qcir_line;  // incremented by the lexer
 void yyerror(const char *m);
 void start_qcir_lex(const string& filename); // in lexer
 
-
 void semantic_error(string msg) {
   cerr<<filename<<":"<<qcir_line<<": "<<msg<<endl;
   exit(100);
@@ -75,6 +74,17 @@ int define_gate(GateType type, const char* gate_name) {
   return gate_id;
 }
 
+void add_quant(QuantifierType qt) {
+  const auto sz=qcir_qfla.pref.size();
+  assert(qt!=FREE||!sz);
+  auto& pref=qcir_qfla.pref;
+  pref.resize(sz+1);
+  pref[sz].first=qt;
+  FOR_EACH(i,qcir_var_stack)
+    pref[sz].second.push_back(*i);
+  qcir_var_stack.clear();
+}
+
 %}
 
 //-- SYMBOL SEMANTIC VALUES -----------------------------
@@ -94,7 +104,7 @@ int define_gate(GateType type, const char* gate_name) {
 }
 
 %token <str> VAR_ID
-%token FORMAT_ID NUM NL FORALL EXISTS XOR AND OR ITE OUTPUT
+%token FORMAT_ID NUM NL FORALL EXISTS FREE_TOK XOR AND OR ITE OUTPUT
 %token LP RP EQ SEMI PLUS MINUS COMMA
 %token ERROR_TOKEN
 %type <val> new_var
@@ -118,18 +128,17 @@ size:
     | NUM
     ;
 
-qblocks:
-       | qblocks qblock
+optfree:
+      | FREE_TOK LP var_list RP { add_quant(FREE); }  nls
+      ;
+
+qblocks: optfree _qblocks
+
+_qblocks:
+        | _qblocks qblock
        ;
 
-qblock: quant LP var_list RP nls {
-      const auto sz=qcir_qfla.pref.size();
-      auto& pref=qcir_qfla.pref;
-      pref.resize(sz+1);
-      pref[sz].first=$1;
-      FOR_EACH(i,qcir_var_stack)pref[sz].second.push_back(*i);
-      qcir_var_stack.clear();
-      }
+qblock: quant LP var_list RP { add_quant($1); } nls
      ;
 
 output_stmt : OUTPUT LP lit RP nls {qcir_qfla.output=$3;};
@@ -151,7 +160,7 @@ gate_definition:
                                qcir_lit_stack.push_back($5);
                                qcir_lit_stack.push_back($7);
                                }
-//    | quant LP var_list SEMI lit RP nls
+    | quant LP var_list SEMI lit RP nls
 
 quant: EXISTS  { $$=EXISTENTIAL; }
      | FORALL  { $$=UNIVERSAL; }

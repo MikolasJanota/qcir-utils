@@ -39,6 +39,15 @@ inline const char* name(int v) {
   return i->second;
 }
 
+inline const char* str(QuantifierType qt) {
+  switch (qt) {
+    case UNIVERSAL: return "forall"; break;
+    case EXISTENTIAL: return "exists"; break;
+    case FREE: return "free"; break;
+  }
+  assert(0);
+}
+
 inline const char* str(GateType gt) {
   switch (gt) {
     case XOR_GT: return "xor"; break;
@@ -89,7 +98,7 @@ int main(int argc, char** argv) {
   cout<<"#QCIR-G14"<<endl;
   FOR_EACH(i,qcir_qfla.pref) {
     const Quantification& q=*i;
-    cout<<(q.first==UNIVERSAL?"forall":"exists");
+    cout<<str(q.first);
     for(size_t i=0;i<q.second.size();++i) cout<<(i?',':'(')<<name(q.second[i]);
     cout<<")"<<endl;
   }
