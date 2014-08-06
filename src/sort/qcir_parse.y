@@ -122,30 +122,31 @@ qblocks:
        | qblocks qblock
        ;
 
-qblock: quant LP var_list RP nls {
+qblock: quant LP var_list RP {
       const auto sz=qcir_qfla.pref.size();
       auto& pref=qcir_qfla.pref;
       pref.resize(sz+1);
       pref[sz].first=$1;
       FOR_EACH(i,qcir_var_stack)pref[sz].second.push_back(*i);
       qcir_var_stack.clear();
-      }
+      } nls
      ;
 
-output_stmt : OUTPUT LP lit RP nls {qcir_qfla.output=$3;};
+output_stmt : OUTPUT LP lit RP {qcir_qfla.output=$3;} nls
+            ;
 
 gates:
   | gates gate
   ;
 
-gate: VAR_ID EQ gate_definition {define_gate($3,$1);}
+gate: VAR_ID EQ gate_definition {define_gate($3,$1);} nls
     ;
 
 gate_definition:
-      XOR LP lit COMMA lit RP nls {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
-    | AND LP lit_list RP nls      {$$=AND_GT;}
-    | OR LP lit_list RP nls       {$$=OR_GT;}
-    | ITE LP lit COMMA lit COMMA lit RP nls {
+      XOR LP lit COMMA lit RP {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
+    | AND LP lit_list RP {$$=AND_GT;}
+    | OR LP lit_list RP {$$=OR_GT;}
+    | ITE LP lit COMMA lit COMMA lit RP {
                                $$=ITE_GT;
                                qcir_lit_stack.push_back($3);
                                qcir_lit_stack.push_back($5);
