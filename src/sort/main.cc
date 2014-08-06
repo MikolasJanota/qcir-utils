@@ -54,6 +54,8 @@ inline const char* str(GateType gt) {
     case AND_GT: return "and"; break;
     case OR_GT: return "or"; break;
     case ITE_GT: return "ite"; break;
+    case EXI_GT: return "exists"; break;
+    case UNI_GT: return "forall"; break;
     default:
         assert(0);
         exit(1000);
@@ -77,17 +79,30 @@ ostream& print_def(ostream& o, int lit) {
   gates_on_stack.insert(v);
   visited_gates.insert(v);
   const auto& g=i->second;
-  for(size_t i=0; i<g.lit_count; ++i) {
-    print_def(o,all_lits[g.first_lit+i]);
-  }
-  o<<name(v)<<" = "<<str(g.t);
-  for(size_t i=0; i<g.lit_count; ++i) {
-    const auto arg = all_lits[g.first_lit+i];
+  if(g.t==UNI_GT||g.t==EXI_GT) {
+    assert(g.lit_count>0);
+    const auto arg=all_lits[g.first_lit];
+    print_def(o,arg);
+    o<<name(v)<<" = "<<str(g.t);
+    for(size_t i=1; i<g.lit_count; ++i) {
+      const auto v=all_lits[g.first_lit+i];
+      assert(v>=0);
+      o<<(i-1?',':'(')<<name(v);
+    }
     const auto pos=arg>=0;
-    o<<(i?',':'(')<<(pos?'+':'-')<<name(pos?arg:-arg);
+    o<<';'<<(pos?'+':'-')<<name(pos?arg:-arg);
+  } else {
+    for(size_t i=0; i<g.lit_count; ++i)
+      print_def(o,all_lits[g.first_lit+i]);
+    o<<name(v)<<" = "<<str(g.t);
+    for(size_t i=0; i<g.lit_count; ++i) {
+      const auto arg = all_lits[g.first_lit+i];
+      const auto pos=arg>=0;
+      o<<(i?',':'(')<<(pos?'+':'-')<<name(pos?arg:-arg);
+    }
   }
   gates_on_stack.erase(v);
-  return o<<')'<<endl;
+  return  o<<')'<<endl;
 }
 
 int main(int argc, char** argv) {

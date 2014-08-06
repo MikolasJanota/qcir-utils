@@ -29,8 +29,8 @@ yy_input_t *yy_input;
   if (errno == ERANGE) return ERROR_TOKEN;
   return NUM;
   }
-<INITIAL>\n           { ++qcir_line; BEGIN(NONINITIAL); return NL; }
 <INITIAL>\n#[^\n]*    { ++qcir_line; BEGIN(NONINITIAL); return NL; }
+<INITIAL>\n           { ++qcir_line; BEGIN(NONINITIAL); return NL; }
 <NONINITIAL>\n#[^\n]* { ++qcir_line; return NL; }
 <NONINITIAL>\n        { ++qcir_line; return NL; }
 <NONINITIAL>[oO][uU][tT][pP][uU][tT]  { return OUTPUT; }
@@ -51,7 +51,7 @@ yy_input_t *yy_input;
 <NONINITIAL>[a-zA-Z0-9_!?]+  { VAL.str=strdup(yytext); return VAR_ID; }
 <INITIAL,NONINITIAL><<EOF>>  { return 0; }
 <INITIAL,NONINITIAL>[ \t]+   { }
-<INITIAL,NONINITIAL>.        { cerr << "Unrecognized token "<<yytext << endl; exit(1); }
+<INITIAL,NONINITIAL>.        { cerr << "Unrecognized token "<<yytext<<endl; exit(1); }
 
 %%
 

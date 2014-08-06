@@ -17,7 +17,7 @@ struct QFla {
   int     output;
 };
 
-typedef enum { AND_GT, OR_GT, XOR_GT, ITE_GT, UNI_GT, EXI_GT }  GateType;
+typedef enum { AND_GT, OR_GT, XOR_GT, ITE_GT, UNI_GT, EXI_GT}  GateType;
 struct Gate {
   GateType t;
   size_t   first_lit;

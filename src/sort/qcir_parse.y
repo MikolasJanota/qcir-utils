@@ -59,15 +59,33 @@ int get_id(const char* s, bool polarity) {
  return polarity ? id : -id;
 }
 
+void define_bool_gate(/*out*/Gate& g) {
+  g.first_lit=all_lits.size();
+  g.lit_count=qcir_lit_stack.size();
+  FOR_EACH(i,qcir_lit_stack) all_lits.push_back(*i);
+  qcir_lit_stack.clear();
+}
+
+void define_q_gate(/*out*/Gate& g) {
+  g.first_lit=all_lits.size();
+  assert(qcir_lit_stack.size()==1);
+  g.lit_count=qcir_var_stack.size()+1;
+  all_lits.push_back(qcir_lit_stack[0]);
+  FOR_EACH(i,qcir_var_stack) all_lits.push_back(*i);
+  qcir_lit_stack.clear();
+  qcir_var_stack.clear();
+}
+
 int define_gate(GateType type, const char* gate_name) {
   const auto gate_id=make_gateid(gate_name);
   assert(0<=gate_id);
   Gate g;
   g.t=type;
-  g.first_lit=all_lits.size();
-  g.lit_count=qcir_lit_stack.size();
-  FOR_EACH(i,qcir_lit_stack) all_lits.push_back(*i);
-  qcir_lit_stack.clear();
+  switch(type){
+  case UNI_GT:
+  case EXI_GT: define_q_gate(g); break;
+  default: define_bool_gate(g);
+  }
   const auto i=gates.insert(pair<int,Gate>(gate_id,g));
   if (!i.second)
     semantic_error("gate redefinition '"+string(gate_name)+"'");
@@ -94,7 +112,6 @@ void add_quant(QuantifierType qt) {
 %code requires {
 #include "qtypes.hh"
 }
-
 
 %union {
   unsigned long long val;
@@ -141,26 +158,30 @@ _qblocks:
 qblock: quant LP var_list RP { add_quant($1); } nls
      ;
 
-output_stmt : OUTPUT LP lit RP nls {qcir_qfla.output=$3;};
+output_stmt : OUTPUT LP lit RP {qcir_qfla.output=$3;} nls
+            ;
 
 gates:
   | gates gate
   ;
 
-gate: VAR_ID EQ gate_definition {define_gate($3,$1);}
+gate: VAR_ID EQ gate_definition {define_gate($3,$1);} nls
     ;
 
 gate_definition:
-      XOR LP lit COMMA lit RP nls {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
-    | AND LP lit_list RP nls      {$$=AND_GT;}
-    | OR LP lit_list RP nls       {$$=OR_GT;}
-    | ITE LP lit COMMA lit COMMA lit RP nls {
+      XOR LP lit COMMA lit RP {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
+    | AND LP lit_list RP {$$=AND_GT;}
+    | OR LP lit_list RP {$$=OR_GT;}
+    | ITE LP lit COMMA lit COMMA lit RP {
                                $$=ITE_GT;
                                qcir_lit_stack.push_back($3);
                                qcir_lit_stack.push_back($5);
                                qcir_lit_stack.push_back($7);
                                }
-    | quant LP var_list SEMI lit RP nls
+    | quant LP var_list SEMI lit RP {
+              $$=($1==EXISTENTIAL)?EXI_GT:UNI_GT;
+              qcir_lit_stack.push_back($5);
+              }
 
 quant: EXISTS  { $$=EXISTENTIAL; }
      | FORALL  { $$=UNIVERSAL; }
