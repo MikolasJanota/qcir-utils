@@ -42,6 +42,7 @@ endif
 
 .PHONY: all
 
+
 all: qcir_sort
 
 qcir_sort:  $(COBJS)
@@ -66,6 +67,8 @@ qcir_sort:  $(COBJS)
 
 main.o: main.cc qcir_parse.tab.h
 
+t:
+	./qcir_sort.exe perr.qcir
 
 ## Clean rule
 clean:

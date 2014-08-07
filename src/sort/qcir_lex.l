@@ -5,13 +5,14 @@
 using namespace std;
 void start_qcir_lex(const string& filename);
 
+extern int qcir_line;
+extern int qcir_column;
+
 #define VAL qcir_lval
 #define YY_INPUT(buf, res, size) (res = yy_input(buf, size))
-
-extern int qcir_line;
+#define YY_USER_ACTION qcir_column+=strlen(yytext);
 
 typedef int yy_input_t(char* buf, int size);
-
 yy_input_t *yy_input;
 
 %}
@@ -29,10 +30,10 @@ yy_input_t *yy_input;
   if (errno == ERANGE) return ERROR_TOKEN;
   return NUM;
   }
-<INITIAL>\n#[^\n]*    { ++qcir_line; BEGIN(NONINITIAL); return NL; }
-<INITIAL>\n           { ++qcir_line; BEGIN(NONINITIAL); return NL; }
-<NONINITIAL>\n#[^\n]* { ++qcir_line; return NL; }
-<NONINITIAL>\n        { ++qcir_line; return NL; }
+<INITIAL>\n#[^\n]*    { ++qcir_line; qcir_column=0; BEGIN(NONINITIAL); return NL; }
+<INITIAL>\n           { ++qcir_line; qcir_column=0; BEGIN(NONINITIAL); return NL; }
+<NONINITIAL>\n#[^\n]* { ++qcir_line; qcir_column=0; return NL; }
+<NONINITIAL>\n        { ++qcir_line; qcir_column=0; return NL; }
 <NONINITIAL>[oO][uU][tT][pP][uU][tT]  { return OUTPUT; }
 <NONINITIAL>[eE][xX][iI][sS][tT][sS]  { return EXISTS; }
 <NONINITIAL>[fF][oO][rR][aA][lL][lL]  { return FORALL; }

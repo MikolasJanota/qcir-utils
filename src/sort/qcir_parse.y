@@ -20,11 +20,12 @@ static string filename("<ERR>");
 
 int yylex();
 int qcir_line;  // incremented by the lexer
+int qcir_column; // updated by the lexer
 void yyerror(const char *m);
 void start_qcir_lex(const string& filename); // in lexer
 
 void semantic_error(string msg) {
-  cerr<<filename<<":"<<qcir_line<<": "<<msg<<endl;
+  cerr<<filename<<":"<<qcir_line<<":"<<qcir_column<<": "<<msg<<endl;
   exit(100);
 }
 
@@ -106,6 +107,7 @@ void add_quant(QuantifierType qt) {
 %}
 
 //-- SYMBOL SEMANTIC VALUES -----------------------------
+%locations
 %defines
 %name-prefix "qcir_"
 
@@ -138,38 +140,39 @@ nls: NL
    | nls NL
    ;
 
-header : FORMAT_ID size nls { }
-       ;
-
-size:
-    | NUM
-    ;
-
-optfree:
-      | FREE_TOK LP var_list RP { add_quant(FREE); }  nls
+header: FORMAT_ID optsize nls { }
       ;
 
-qblocks: optfree _qblocks
-
-_qblocks:
-        | _qblocks qblock
+optsize: /* empty */
+       | NUM
        ;
 
-qblock: quant LP var_list RP { add_quant($1); } nls
-     ;
+optfree: /* empty */
+       | FREE_TOK LP var_list RP {add_quant(FREE);}  nls
+       ;
+
+qblocks: optfree qblocks_
+       ;
+
+qblocks_: /* empty */
+        | qblocks_ qblock
+        ;
+
+qblock: quant LP var_list RP {add_quant($1);} nls
+      ;
 
 output_stmt : OUTPUT LP lit RP {qcir_qfla.output=$3;} nls
             ;
 
-gates:
-  | gates gate
-  ;
+gates: /* empty */
+     | gates gate
+     ;
 
 gate: VAR_ID EQ gate_definition {define_gate($3,$1);} nls
     ;
 
-gate_definition:
-      XOR LP lit COMMA lit RP {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
+gate_definition
+    : XOR LP lit COMMA lit RP {$$=XOR_GT;qcir_lit_stack.push_back($3);qcir_lit_stack.push_back($5);}
     | AND LP lit_list RP {$$=AND_GT;}
     | OR LP lit_list RP {$$=OR_GT;}
     | ITE LP lit COMMA lit COMMA lit RP {
@@ -178,44 +181,43 @@ gate_definition:
                                qcir_lit_stack.push_back($5);
                                qcir_lit_stack.push_back($7);
                                }
-    | quant LP var_list SEMI lit RP {
-              $$=($1==EXISTENTIAL)?EXI_GT:UNI_GT;
-              qcir_lit_stack.push_back($5);
-              }
+    | quant LP var_list SEMI lit RP {$$=($1==EXISTENTIAL)?EXI_GT:UNI_GT; qcir_lit_stack.push_back($5);}
+    ;
 
 quant: EXISTS  { $$=EXISTENTIAL; }
      | FORALL  { $$=UNIVERSAL; }
      ;
 
 new_var: VAR_ID {$$=make_varid($1);}
+       ;
 
-var_list:
-    | new_var                {qcir_var_stack.push_back($1);}
-    | var_list COMMA new_var {qcir_var_stack.push_back($3);}
-    ;
+var_list: new_var                {qcir_var_stack.push_back($1);}
+        | var_list COMMA new_var {qcir_var_stack.push_back($3);}
+        ;
 
-lit_list:
-         | lit                  { qcir_lit_stack.push_back($1);}
-         | lit_list COMMA lit   { qcir_lit_stack.push_back($3);}
-         ;
+lit_list: /* empty */
+        | lit                  { qcir_lit_stack.push_back($1);}
+        | lit_list COMMA lit   { qcir_lit_stack.push_back($3);}
+        ;
 
-optplus:
-    | PLUS
-    ;
+optplus: /* empty */
+       | PLUS
+       ;
 
 lit: optplus VAR_ID   {$$=get_id($2,true);}
    | MINUS VAR_ID  {$$=get_id($2,false);}
-    ;
+   ;
 %%
 
 void read_qcir(string _filename) {
   qcir_line=1;
+  qcir_column=0;
   filename=_filename;
   start_qcir_lex(filename);
   qcir_parse();
 }
 
 void yyerror(const char *msg) {
-  cerr<<filename<<":"<<qcir_line<<": "<<msg<<endl;
+  cerr<<filename<<":"<<qcir_line<<":"<<qcir_column<<": "<<msg<<endl;
   exit(100);
 }

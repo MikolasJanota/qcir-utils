@@ -46,6 +46,7 @@ inline const char* str(QuantifierType qt) {
     case FREE: return "free"; break;
   }
   assert(0);
+  return "ERROR";
 }
 
 inline const char* str(GateType gt) {
