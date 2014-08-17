@@ -9,7 +9,7 @@
 #include "MemoVisitor.hh"
 class TopoPrint : protected MemoVisitor<int> {
   public:
-    TopoPrint(const QFla& qfla,std::ostream& o) : MemoVisitor(qfla), o(o) {}
+    TopoPrint(const QFla& qfla,std::ostream& o) : MemoVisitor<int>(qfla), o(o) {}
 
     void print() {
       o<<"#QCIR-G14"<<std::endl;

@@ -185,7 +185,8 @@ quant: EXISTS  { $$=EXISTENTIAL; }
 new_var: VAR_ID {$$=make_varid($1);}
        ;
 
-var_list: new_var                {qcir_var_stack.push_back($1);}
+var_list: /* empty */
+        | new_var                {qcir_var_stack.push_back($1);}
         | var_list COMMA new_var {qcir_var_stack.push_back($3);}
         ;
 

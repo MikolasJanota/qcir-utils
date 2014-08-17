@@ -9,7 +9,7 @@
 #include "MemoVisitor.hh"
 class ClauseCounter : protected MemoVisitor<int> {
   public:
-    ClauseCounter(const QFla& qfla) : MemoVisitor(qfla){}
+    ClauseCounter(const QFla& qfla) : MemoVisitor<int>(qfla){}
     int count() {
       total=0;
       visit(qfla.output);
@@ -21,19 +21,19 @@ class ClauseCounter : protected MemoVisitor<int> {
     virtual int visit_uni(int var, const Gate& g) { return visit_quant(var,g); }
     virtual int visit_and(int var, const Gate& g) {
       visit_ops(var,g);
-      return total+g.lit_count+1;
+      return total+=g.lit_count+1;
     }
     virtual int visit_or(int var, const Gate& g)  {
       visit_ops(var,g);
-      return total+g.lit_count+1;
+      return total+=g.lit_count+1;
     }
     virtual int visit_xor(int var, const Gate& g) {
       assert(g.lit_count==2);
       visit_ops(var,g);
-      return total+4;
+      return total+=4;
     }
     virtual int visit_ite(int var, const Gate& g) {
-      return total+4;
+      return total+=4;
     }
 
   protected:
@@ -51,7 +51,7 @@ class ClauseCounter : protected MemoVisitor<int> {
 
 class CNFPrint : protected MemoVisitor<int> {
   public:
-    CNFPrint(const QFla& qfla,std::ostream& o) : MemoVisitor(qfla), o(o) {}
+    CNFPrint(const QFla& qfla,std::ostream& o) : MemoVisitor<int>(qfla), o(o) {}
 
     void print() {
       ClauseCounter cc(qfla);
@@ -60,7 +60,7 @@ class CNFPrint : protected MemoVisitor<int> {
         if(!qfla.is_input(v)) continue;
         o<<"c m "<<v<<" "<<name(v)<<std::endl;
       }
-      o<<"p cnf "<<qfla.last_id<<" "<<ccnt<<std::endl;
+      o<<"p cnf "<<qfla.last_id<<" "<<(ccnt+1)<<std::endl;
       FOR_EACH(i,qfla.pref) {
         const Quantification& q=*i;
         o<<str(q.first);
@@ -71,6 +71,12 @@ class CNFPrint : protected MemoVisitor<int> {
         }
         o<<" 0"<<std::endl;
       }
+      o<<str(EXISTENTIAL);
+      for(int v=1;v<=qfla.last_id;++v) {
+        if(qfla.is_input(v)) continue;
+        o<<" "<<v;
+      }
+      o<<" 0"<<std::endl;
       o<<encode(qfla.output)<<" 0"<<std::endl;
     }
 
@@ -120,11 +126,11 @@ class CNFPrint : protected MemoVisitor<int> {
       o<<-a<<" "<<-b<<" "<<-var<<" 0"<<std::endl;
       o<<a<<" "<<b<<" "<<-var<<" 0"<<std::endl;
       o<<a<<" "<<-b<<" "<<var<<" 0"<<std::endl;
-      o<<-a<<" "<<-b<<" "<<var<<" 0"<<std::endl;
+      o<<-a<<" "<<b<<" "<<var<<" 0"<<std::endl;
       return var;
     }
 
-    virtual int visit_ite(int var, const Gate& g) { 
+    virtual int visit_ite(int var, const Gate& g) {
       assert(g.lit_count==3);
       const auto c=encode(qfla.all_lits[g.first_lit]);
       const auto t=encode(qfla.all_lits[g.first_lit+1]);
@@ -132,7 +138,7 @@ class CNFPrint : protected MemoVisitor<int> {
       o<<-c<<" "<<-t<<" "<<var<<" 0"<<std::endl;
       o<<-c<<" "<<t<<" "<<-var<<" 0"<<std::endl;
       o<<c<<" "<<-e<<" "<<var<<" 0"<<std::endl;
-      o<<c<<" "<<e<<" "<<var<<" 0"<<std::endl;
+      o<<c<<" "<<e<<" "<<-var<<" 0"<<std::endl;
       return var;
     }
 
