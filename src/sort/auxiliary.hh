@@ -11,6 +11,7 @@
 #include <sys/resource.h>
 #include <string.h>
 #include <assert.h>
+#include <unordered_set>
 #define __PL (std::cerr << __FILE__ << ":" << __LINE__ << std::endl).flush();
 #define FOR_EACH(index,iterated)\
   for (auto index = (iterated).begin(); index != (iterated).end();++index)
@@ -18,6 +19,11 @@
 static inline double read_cpu_time() {
   struct rusage ru; getrusage(RUSAGE_SELF, &ru);
   return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000;
+}
+
+template <class T>
+inline bool contains(const std::unordered_set<T>& es, const T& e) {
+  return es.count(e);
 }
 
 struct cstrHash {

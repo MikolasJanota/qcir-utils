@@ -3,16 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unordered_map>
 #include "auxiliary.hh"
 #include "qtypes.hh"
 using namespace std;
 QFla qcir_qfla;
-unordered_map<int,Gate> gates;
-std::vector<int> all_lits;
-unordered_map<const char*,int,cstrHash,cstrEq> name2id;
-vector<bool> varids;
-int qcir_last_id;
 
 static std::vector<int> qcir_lit_stack;
 static std::vector<int> qcir_var_stack;
@@ -30,49 +24,49 @@ void semantic_error(string msg) {
 }
 
 int make_varid(const char* var_name) {
-  ++qcir_last_id;
-  varids.resize(qcir_last_id+1,false);
-  const auto retv=qcir_last_id;
-  varids[retv]=true;
-  const auto i=name2id.insert(std::pair<const char*,int>(var_name,retv));
+  auto& lid = qcir_qfla.last_id;
+  ++lid;
+  qcir_qfla.varids.resize(lid+1,false);
+  const auto retv=lid;
+  qcir_qfla.varids[retv]=true;
+  const auto i=qcir_qfla.name2id.insert(std::pair<const char*,int>(var_name,retv));
   if (!i.second) semantic_error("var redefinition '"+string(var_name)+"'");
   return retv;
 }
 
 int make_gateid(const char *s) {
-  const auto i=name2id.find(s);
-  if(i!=name2id.end()) {
+  const auto i=qcir_qfla.name2id.find(s);
+  if(i!=qcir_qfla.name2id.end()) {
      const auto retv=i->second;//already defined
-     const size_t ix=(size_t)retv;
-     if(ix<varids.size()&&varids[ix])
+     if(qcir_qfla.is_input(retv))
         semantic_error("trying to define a variable '"+string(s)+"'");
      return retv;
   }
-  const auto id=++qcir_last_id;
-  name2id[s]=id;
+  const auto id=++(qcir_qfla.last_id);
+  qcir_qfla.name2id[s]=id;
   return id;
 }
 
 int get_id(const char* s, bool polarity) {
- const auto i=name2id.find(s);
- const auto id=(i==name2id.end()) ? make_gateid(s)
-                                  : i->second;
+ const auto i=qcir_qfla.name2id.find(s);
+ const auto id=(i==qcir_qfla.name2id.end()) ? make_gateid(s)
+                                           : i->second;
  return polarity ? id : -id;
 }
 
 void define_bool_gate(/*out*/Gate& g) {
-  g.first_lit=all_lits.size();
+  g.first_lit=qcir_qfla.all_lits.size();
   g.lit_count=qcir_lit_stack.size();
-  FOR_EACH(i,qcir_lit_stack) all_lits.push_back(*i);
+  FOR_EACH(i,qcir_lit_stack) qcir_qfla.all_lits.push_back(*i);
   qcir_lit_stack.clear();
 }
 
 void define_q_gate(/*out*/Gate& g) {
-  g.first_lit=all_lits.size();
+  g.first_lit=qcir_qfla.all_lits.size();
   assert(qcir_lit_stack.size()==1);
   g.lit_count=qcir_var_stack.size()+1;
-  all_lits.push_back(qcir_lit_stack[0]);
-  FOR_EACH(i,qcir_var_stack) all_lits.push_back(*i);
+  qcir_qfla.all_lits.push_back(qcir_lit_stack[0]);
+  FOR_EACH(i,qcir_var_stack) qcir_qfla.all_lits.push_back(*i);
   qcir_lit_stack.clear();
   qcir_var_stack.clear();
 }
@@ -87,7 +81,7 @@ int define_gate(GateType type, const char* gate_name) {
   case EXI_GT: define_q_gate(g); break;
   default: define_bool_gate(g);
   }
-  const auto i=gates.insert(pair<int,Gate>(gate_id,g));
+  const auto i=qcir_qfla.gates.insert(pair<int,Gate>(gate_id,g));
   if (!i.second)
     semantic_error("gate redefinition '"+string(gate_name)+"'");
   return gate_id;

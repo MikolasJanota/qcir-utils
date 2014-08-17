@@ -1,8 +1,13 @@
-CSRCS    = $(wildcard *.cc)
+GENCC=Options.cc
+GENHH=Options.hh
+## nongenerated sources
+ORIGCSRCS = $(filter-out $(GENCC), $(wildcard *.cc) )
+
+## generated and nongenerated sources and objects
+CSRCS     = $(ORIGCSRCS) $(GENCC)
 YACC     = $(wildcard *.y)
 LEX      = $(wildcard *.l)
 COBJS    = $(CSRCS:.cc=.o) $(YACC:.y=.tab.o) $(LEX:.l=.o)
-PDFS    = $(NSRCS:.nw=.pdf)
 LIBD =
 LIBS =
 CXX?=g++
@@ -43,7 +48,9 @@ endif
 .PHONY: all
 
 
-all: qcir_sort
+all:
+	make sources
+	make qcir_sort
 
 qcir_sort:  $(COBJS)
 	@echo Linking: $@
@@ -65,14 +72,21 @@ qcir_sort:  $(COBJS)
 	@echo Generating: $*
 	@flex -o$@ $<
 
-main.o: main.cc qcir_parse.tab.h
+sources: $(GENCC) $(GENHH)
 
-t:
-	./qcir_sort.exe perr.qcir
+./Options.o: Options.cc option_generation
+	@echo Compiling: $@
+	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+./Options.hh Options.cc: option_generation
+	@echo Generating: $@
+	mkdir -p generated
+	./option_generation  >Options.hh 2>Options.cc
 
 ## Clean rule
 clean:
-	@rm -f qcir_sort qcir_sort.exe $(COBJS) *.tab.[ch]
+	@rm -f qcir_sort qcir_sort.exe $(COBJS) *.tab.[ch] $(GENCC) $(GENHH)
+
 
 DEPENDS = ${COBJS:.o=.d}
 -include ${DEPENDS}
