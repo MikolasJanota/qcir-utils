@@ -33,6 +33,7 @@ class ClauseCounter : protected MemoVisitor<int> {
       return total+=4;
     }
     virtual int visit_ite(int var, const Gate& g) {
+      visit_ops(var,g);
       return total+=4;
     }
 
